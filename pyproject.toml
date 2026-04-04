@@ -7,6 +7,7 @@ requires-python = ">=3.13"
 dependencies = [
     "matplotlib>=3.10.8",
     "numpy>=2.4.4",
+    "openml>=0.15.1",
     "pymfe>=0.4.4",
     "seaborn>=0.13.2",
 ]
