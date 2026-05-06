@@ -1,4 +1,20 @@
-# Referências
+# Descrição
+
+Esse trabalho tem como objetivo a seleção de metafeatures visando a performance de sistemas de meta-aprendizado. A ideia é utilizar algoritmos de otimização para selecionar a melhor combinação de metafeture para a performance final.
+
+Sugestões do professor:
+
+- comparar o conjunto original de MFs com o conjunto final (reduzido);
+- curva de performance ao longo do tempo de otimização;
+- comparar conjunto reduzido com importância das features reportada por um modelo de Random Forest;
+- discutir as possíveis causas da escolha de algumas features.
+
+## Fase 1
+---
+
+Testar com algoritmos exatos (exemplo: programação linear - cplex) e meta-heuristicos (exemplo: algoritmo genetico)
+
+### Referências
 
 1. Meta-Learning: A Survey
 2. Report on the experiments with feature selection in meta-level learning;
@@ -6,7 +22,7 @@
 4.  
 
 
-# Tarefas para fazer
+### Tarefas para fazer
 
 0. Criação do dataset com openml
 1. Fazer um meta-modelo para 
