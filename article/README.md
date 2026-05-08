@@ -25,7 +25,7 @@ Testar com algoritmos exatos (exemplo: programação linear - cplex) e meta-heur
 ### Tarefas para fazer
 
 0. Criação do dataset com openml
-1. Fazer um meta-modelo para 
+1. Fazer um meta-modelo para avaliar as meta-features selecionadas
 2. Criação da população inicial com tipos de algoritmos diferentes como na atividade 4
 3. Verificar se é possivel utilizar algoritmos exatos com cplex (tem um para python)
 4. Utilizar meta-heuristicas diferentes para selecionar as meta-features
