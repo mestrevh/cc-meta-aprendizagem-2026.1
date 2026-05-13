@@ -29,3 +29,8 @@ Testar com algoritmos exatos (exemplo: programação linear - cplex) e meta-heur
 2. Criação da população inicial com tipos de algoritmos diferentes como na atividade 4
 3. Verificar se é possivel utilizar algoritmos exatos com cplex (tem um para python)
 4. Utilizar meta-heuristicas diferentes para selecionar as meta-features
+
+### Duvidas
+
+1. Utilizar mais de um meta-modelo durante a escolha das metafeatures?
+2. 
