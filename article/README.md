@@ -12,25 +12,13 @@ Sugestões do professor:
 ## Fase 1
 ---
 
-Testar com algoritmos exatos (exemplo: programação linear - cplex) e meta-heuristicos (exemplo: algoritmo genetico)
+Testar com algoritmos exatos (exemplo: programação linear - cplex) e meta-heuristicos (exemplo: algoritmo genético)
+
+Inicialmente foi utilizado apenas o Exemplo 4 do professor para entender como está funcionando a metodologia que ele fez para selecionar as meta fetaures utilizando o algoritmo genético
 
 ### Referências
 
-1. Meta-Learning: A Survey
-2. Report on the experiments with feature selection in meta-level learning;
-3. 
-4.  
-
-
-### Tarefas para fazer
-
-0. Criação do dataset com openml
-1. Fazer um meta-modelo para avaliar as meta-features selecionadas
-2. Criação da população inicial com tipos de algoritmos diferentes como na atividade 4
-3. Verificar se é possivel utilizar algoritmos exatos com cplex (tem um para python)
-4. Utilizar meta-heuristicas diferentes para selecionar as meta-features
-
-### Duvidas
-
-1. Utilizar mais de um meta-modelo durante a escolha das metafeatures?
-2. 
+1. Section 4 - Metalearning Applications to Automated Machine Learning and Data Mining
+2. Predicting relative performance of classifiers from samples.
+3. An iterative process for building learning curves and predicting relative performance of classifiers.
+4. 
