@@ -1,8 +1,7 @@
 from sklearn.model_selection import LeaveOneOut
 import pandas as pd
+from sklearn.base import clone
 import warnings
-from sklearn.metrics import accuracy_score, f1_score
-from sklearn.tree import DecisionTreeClassifier
 
 class  MetaModel:
     def __init__(self):
@@ -27,11 +26,15 @@ class  MetaModel:
             # Split the data into training and test sets
             X = meta_dataset.drop(columns=['Dataset', 'Best']) # Drop everything except meta-features
             y = meta_dataset['Best']
+            
             X_train, X_test = X.iloc[train_index], X.iloc[test_index]
             y_train, y_test = y.iloc[train_index], y.iloc[test_index]
             
+            X_train = X_train.fillna(0)
+            X_test = X_test.fillna(0)
+        
             # Train a simple classifier (e.g., Decision Tree) on the training set
-            clf = model
+            clf = clone(model)
             clf.fit(X_train, y_train)
             
             # Predict the best classifier for the test dataset
@@ -51,18 +54,22 @@ class  MetaModel:
         return summary_df
 
 # TESTE
-if __name__ == "__main__":
-    dt = DecisionTreeClassifier()
-    meta_dataset = pd.read_csv('data/metafeatures_dataset_with_best.csv', index_col=0)
+# if __name__ == "__main__":
     
-    metamodel = MetaModel()
-    df_predicts = metamodel.train_and_evaluate_best_metamodel(meta_dataset, model=dt)
+#     from sklearn.metrics import accuracy_score, f1_score
+#     from sklearn.tree import DecisionTreeClassifier
     
-    y_pred = list(df_predicts['Best clf (pred)'])
-    y_true = meta_dataset['Best'].values
+#     dt = DecisionTreeClassifier()
+#     meta_dataset = pd.read_csv('data/metafeatures_dataset_with_best.csv', index_col=0)
     
-    metamodel_accuracy = accuracy_score(y_true, y_pred)
-    metamodel_f1 = f1_score(y_true, y_pred, average='weighted')
+#     metamodel = MetaModel()
+#     df_predicts = metamodel.train_and_evaluate_best_metamodel(meta_dataset, model=dt)
     
-    print("acuracia: ", metamodel_accuracy)
-    print("f1: ", metamodel_f1)
+#     y_pred = list(df_predicts['Best clf (pred)'])
+#     y_true = meta_dataset['Best'].values
+    
+#     metamodel_accuracy = accuracy_score(y_true, y_pred)
+#     metamodel_f1 = f1_score(y_true, y_pred, average='weighted')
+    
+#     print("acuracia: ", metamodel_accuracy)
+#     print("f1: ", metamodel_f1)
