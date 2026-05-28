@@ -2,3 +2,4 @@
 venv/
 meta-aprendizagem/
 Exemplo 3/datasets/
+__pycache__

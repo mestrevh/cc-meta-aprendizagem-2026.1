@@ -9,28 +9,36 @@ Sugestões do professor:
 - comparar conjunto reduzido com importância das features reportada por um modelo de Random Forest;
 - discutir as possíveis causas da escolha de algumas features.
 
-## Fase 1
+## Fase 1: Criação dos meta-datasets
+
+1. Criação do metadataset (Exemplo 4)
+2. Análise e discussão sobre os dados
+3. Área de busca das metafeatures (atualmente tem mais de 1000 colunas)
 ---
 
-Testar com algoritmos exatos (exemplo: programação linear - cplex) e meta-heuristicos (exemplo: algoritmo genetico)
+## Fase 2: Classe de meta-modelos
+
+1. Construção de uma classe para treinamento do meta-modelo com metodologia LeaveOneOut
+2. Ideia é utilizar mais de 1 classificador para meta-modelo
+3. Pré processamento nos meta-modelos
+---
+
+## Fase 3: Exploração dos algoritmos de seleção
+
+1. Testar com algoritmos exatos (exemplo: programação linear - cplex) e algoritmos meta-heuristicos (exemplo: algoritmo genético)
+2. 3 abordagens para ambos tipos de algoritmos
+3. Utilizar uma abordagem híbrida: diminuir o espaço de busca e verificar a importância para melhorar 
+---
+
+## Fase 4: Resultados e discussão
+
+1. Criar tabela com os resultados dos meta-modelos
+2. Utilizar gráficos e falar sobre o impacto das meta-features
+3. Concluir recomendando a melhor peformance sobre as características
+---
 
 ### Referências
 
-1. Meta-Learning: A Survey
-2. Report on the experiments with feature selection in meta-level learning;
-3. 
-4.  
-
-
-### Tarefas para fazer
-
-0. Criação do dataset com openml
-1. Fazer um meta-modelo para avaliar as meta-features selecionadas
-2. Criação da população inicial com tipos de algoritmos diferentes como na atividade 4
-3. Verificar se é possivel utilizar algoritmos exatos com cplex (tem um para python)
-4. Utilizar meta-heuristicas diferentes para selecionar as meta-features
-
-### Duvidas
-
-1. Utilizar mais de um meta-modelo durante a escolha das metafeatures?
-2. 
+1. Section 4 - Metalearning Applications to Automated Machine Learning and Data Mining
+2. Predicting relative performance of classifiers from samples.
+3. An iterative process for building learning curves and predicting relative performance of classifiers.
