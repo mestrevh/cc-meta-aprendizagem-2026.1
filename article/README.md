@@ -13,7 +13,7 @@ Sugestões do professor:
 
 1. Criação do metadataset (Exemplo 4)
 2. Análise e discussão sobre os dados
-3. Área de busca das metafeatures
+3. Área de busca das metafeatures (atualmente tem mais de 1000 colunas)
 ---
 
 ## Fase 2: Classe de meta-modelos

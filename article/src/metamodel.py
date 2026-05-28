@@ -1,13 +1,15 @@
-from sklearn.model_selection import LeaveOneOut
 import pandas as pd
+import numpy as np
+from sklearn.model_selection import LeaveOneOut
 from sklearn.base import clone
+from sklearn.inspection import permutation_importance
 import warnings
 
 class  MetaModel:
     def __init__(self):
         warnings.filterwarnings("ignore", category=UserWarning)
         
-    def train_and_evaluate_best_metamodel(self, meta_dataset, model):
+    def train_and_evaluate_best_metamodel(self, meta_dataset, meta_dataset_train, model):
         
         # Create a dictionary to store the reuslts:
         summary_of_predictions = {
@@ -22,10 +24,10 @@ class  MetaModel:
         
         y_pred = []
 
-        for train_index, test_index in loo.split(meta_dataset):
+        for train_index, test_index in loo.split(meta_dataset_train):
             # Split the data into training and test sets
-            X = meta_dataset.drop(columns=['Dataset', 'Best']) # Drop everything except meta-features
-            y = meta_dataset['Best']
+            X = meta_dataset_train.drop(columns=['Dataset', 'Best']) # Drop everything except meta-features
+            y = meta_dataset_train['Best']
             
             X_train, X_test = X.iloc[train_index], X.iloc[test_index]
             y_train, y_test = y.iloc[train_index], y.iloc[test_index]
@@ -41,7 +43,7 @@ class  MetaModel:
             y_pred.append(clf.predict(X_test)[0])
             
             # Store results in the summary dictionary
-            summary_of_predictions['Dataset'].append(meta_dataset['Dataset'].iloc[test_index].values[0])
+            summary_of_predictions['Dataset'].append(meta_dataset_train['Dataset'].iloc[test_index].values[0])
             summary_of_predictions['Best clf (true)'].append(y_test.values[0])
             summary_of_predictions['Perf of best clf (true)'].append(meta_dataset.loc[test_index, y_test.values[0]].values[0])
             summary_of_predictions['Best clf (pred)'].append(y_pred[-1])
@@ -52,6 +54,53 @@ class  MetaModel:
         summary_df = pd.DataFrame(summary_of_predictions)
 
         return summary_df
+    
+    def meta_feature_scores(self, meta_dataset, model):
+        
+        # Separando X e y (ajuste conforme a sua lógica real)
+        X = meta_dataset.drop(columns=['Dataset', 'Best'])
+        y = meta_dataset['Best']
+        
+        X = X.fillna(0)
+        y = y.fillna(0)
+        
+        # 1. Treina o modelo (funciona tanto para estimadores simples quanto para Pipelines)
+        model_train = clone(model)
+        model_train.fit(X, y)
+        
+        # 2. Captura ou calcula a importância das features de forma dinâmica
+        if hasattr(model_train, 'feature_importances_'):
+            # Caso clássico: Árvores e Random Forest
+            feature_scores = model_train.feature_importances_
+            
+        elif hasattr(model_train, 'steps') and hasattr(model_train.steps[-1][1], 'feature_importances_'):
+            # Caso o modelo esteja dentro de um Pipeline e seja baseado em árvore
+            feature_scores = model_train.steps[-1][1].feature_importances_
+        
+        elif "gaussiannb" in str(model).lower():
+                # Calcula o F-value de cada feature diretamente (relação matemática pura)
+                from sklearn.feature_selection import f_classif
+                f_values, _ = f_classif(X, y)
+                
+                # Substitui NaNs por 0 se houver colunas constantes
+                feature_scores = np.nan_to_num(f_values)
+        else:
+            # SOLUÇÃO PARA NAIVE BAYES, SVM E KNN: Importância por Permutação
+            # Avalia o impacto de cada feature na acurácia do modelo ajustado
+            resultado = permutation_importance(
+                model_train, X, y, n_repeats=5, random_state=42, scoring='accuracy'
+            )
+            # Pegamos a média do impacto de cada permutação
+            feature_scores = resultado.importances_mean
+            
+            # Garante que importâncias levemente negativas (ruídos) virem 0 
+            # para não quebrar a lógica de maximização do seu ILP
+            feature_scores = np.maximum(feature_scores, 0)
+
+        # ... o resto do seu código que calcula previsões, f1-score, etc.
+        
+        # Retorna as métricas e os scores gerados de forma segura
+        return feature_scores
 
 # TESTE
 # if __name__ == "__main__":
@@ -73,3 +122,4 @@ class  MetaModel:
     
 #     print("acuracia: ", metamodel_accuracy)
 #     print("f1: ", metamodel_f1)
+
