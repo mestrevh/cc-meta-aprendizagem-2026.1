@@ -104,12 +104,12 @@ class GeneticFeatureSelector:
 
             fitness_value = accuracy_mean - size_penalty - stability_penalty
 
-            score = Score(fitness=fitness_value, accuracy_mean=accuracy_mean, accuracy_std=accuracy_std, n_features=n_features)
+            score = Score(fitness_value, accuracy_mean, accuracy_std, n_features)
 
         except Exception as exc:
             self.last_error = exc
 
-            score = Score(fitness=-1e9, accuracy_mean=0.0, accuracy_std=0.0, n_features=n_features)
+            score = Score(-1e9, 0.0, 0.0, n_features)
 
         with self.cache_lock:
             self.fitness_cache[key] = score
@@ -414,14 +414,14 @@ class GeneticFeatureSelector:
                 print(repr(self.last_error))
 
         return GAResult(
-            name=self.config.name,
-            selected_features=final_features,
-            selected_mask=best_global,
-            fitness=best_global_score.fitness,
-            accuracy_mean=best_global_score.accuracy_mean,
-            accuracy_std=best_global_score.accuracy_std,
-            n_features=best_global_score.n_features,
-            history=pd.DataFrame(history),
-            last_error=self.last_error,
-            config=self.config,
+            self.config.name,
+            final_features,
+            best_global,
+            best_global_score.fitness,
+            best_global_score.accuracy_mean,
+            best_global_score.accuracy_std,
+            best_global_score.n_features,
+            pd.DataFrame(history),
+            self.last_error,
+            self.config,
         )
