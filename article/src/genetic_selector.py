@@ -21,6 +21,7 @@ class GeneticFeatureSelector:
         pipeline_factory,
         cv,
         config,
+        initial_seeds=None,
     ):
         self.X_df = X_df
         self.y = y
@@ -34,6 +35,9 @@ class GeneticFeatureSelector:
         self.fitness_cache = {}
         self.cache_lock = threading.Lock()
         self.last_error = None
+
+        # Sementes externas (ex: soluções dos métodos exatos) inseridas como elites
+        self.initial_seeds = initial_seeds or []
 
         self.rank_position = np.empty(self.n_total_features, dtype=int)
         self.rank_position[self.feature_ranking] = np.arange(self.n_total_features)
@@ -133,6 +137,15 @@ class GeneticFeatureSelector:
     def initialize_population(self):
         population = []
         seen = set()
+
+        # ─── Inserir sementes externas como elites na população inicial ───
+        for seed in self.initial_seeds:
+            ind = self.repair(seed.astype(np.uint8))
+            key = self.individual_key(ind)
+
+            if key not in seen and len(population) < self.config.population_size:
+                population.append(ind)
+                seen.add(key)
 
         if self.config.initialization_strategy in ["guided", "mixed"]:
             seed_sizes = [

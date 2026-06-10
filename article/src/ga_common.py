@@ -35,6 +35,7 @@ class GAConfig:
     sparse_target_ratio: float = 0.12
     n_jobs: int = -1
     random_state: int = 42
+    seed_source: str = ""  # Origem das sementes externas (ex: "exact_milp", "hybrid")
 
 
 @dataclass(frozen=True)
