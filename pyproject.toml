@@ -11,4 +11,5 @@ dependencies = [
     "pulp>=3.3.2",
     "pymfe>=0.4.4",
     "seaborn>=0.13.2",
+    "unidecode>=1.4.0",
 ]
