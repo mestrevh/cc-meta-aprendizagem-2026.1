@@ -1,0 +1,357 @@
+\documentclass[12pt]{article}
+
+\usepackage{sbc-template}
+\usepackage{graphicx,url}
+\usepackage[utf8]{inputenc}
+\usepackage[brazil]{babel}
+\usepackage[latin1]{inputenc}  
+\usepackage{float}
+
+     
+\sloppy
+
+\title{Seleção de meta-features e seu efeito na performance de sistemas de meta-aprendizagem}
+
+\author{João Pedro Nunes Magalhães\inst{1}, Victor Hugo Silva Ângelo\inst{1}}
+
+
+\address{Instituto de Computação (IC) -- Universidade Federal de Alagoas (UFAL)\\
+  Av. Lourival Melo Mota, S/N -- Tabuleiro do Martins -- 57072-900 -- Maceió -- AL -- Brazil
+  \email{\{jpnm,vsha\}@ic.ufal.br}
+}
+
+\begin{document} 
+
+\maketitle
+
+\section{Introdução}
+
+Medir a performance de um sistema de meta-aprendizagem \cite{vanschoren2018meta} vai além de apenas treinar um modelo de aprendizado sobre meta-features. Por esse motivo, a importância de selecionar os atributos corretos para a construção do metamodelo configura-se como a etapa inicial e fundamental para o treinamento das abordagens base. No contexto mais amplo de \textit{Automated Machine Learning} (AutoML), a seleção de algoritmos e a otimização de hiperparâmetros são gargalos práticos constantes \cite{he2021automl}. Esse cenário impacta diretamente no processo final de recomendação de algoritmos de \textit{machine learning} para determinados conjuntos de dados. Ademais, as bibliotecas dedicadas à extração de meta-features geram uma vasta quantidade de atributos descritivos — como número de linhas, número de colunas, entropia das variáveis, entre outros.
+
+Essa alta dimensionalidade no espaço de meta-atributos pode prejudicar o sistema em diversas frentes: compromete o treinamento do metamodelo, afeta a precisão na indicação do melhor algoritmo base e eleva consideravelmente o tempo de processamento e o consumo de recursos computacionais. Para contornar os desafios impostos pela alta dimensionalidade do conjunto de dados, pelo elevado custo computacional da extração de características e pelos efeitos da sobreposição informacional e multicolinearidade, a presente pesquisa foca em reduzir o número de meta-features através de técnicas de otimização oriundas da Pesquisa Operacional. O problema central consiste em uma tarefa de otimização combinatória: busca-se um subconjunto de características que maximize a acurácia preditiva, contudo, avaliar todas as combinações possíveis de atributos em um espaço de busca discreto é um processo intratável do ponto de vista computacional.
+
+Em contrapartida às tendências mais recentes de Auto-ML, que se valem de arquiteturas neurais complexas para extrair representações e recomendar algoritmos diretamente a partir dos dados limpos, evadindo assim a etapa de engenharia de atributos tradicional \cite{wang2023onestep}, o presente estudo adota um paradigma de seleção rigorosa. O foco recai em filtrar as características topológicas e estatísticas extraídas pelo pacote genérico \textit{pymfe} (via função MFE), com o intuito primário de maximizar o nível de acerto do melhor algoritmo de aprendizado de máquina para um novo conjunto de dados. Para entender de maneira aprofundada o impacto destas meta-features no treinamento e na predição, seis algoritmos base foram testados: \textit{Support Vector Machine} (SVM), \textit{K-Nearest Neighbors} (KNN), \textit{Gaussian Naive Bayes}, \textit{Decision Tree}, \textit{Random Forest} e \textit{ExtraTreesClassifier}.
+
+\section{Proposta}
+
+\subsection{Métodos Exatos} \label{sub:exato}
+
+Ao interpretar a tarefa como um desafio de seleção ótima de variáveis, torna-se possível adaptar modelagens matemáticas já consolidadas na literatura clássica, a exemplo do Problema de Seleção do Melhor Subconjunto, do Problema da Mochila com Penalidades e do Problema da Mochila Quadrática. Todas essas formulações dependem inerentemente do cálculo da relevância de cada meta-feature como insumo básico (pesos do modelo). Para tal, os coeficientes de importância foram extraídos diretamente dos algoritmos classificadores suportados pelo pacote \textit{scikit-learn}, conforme as respectivas técnicas:
+
+\begin{enumerate}
+    \item \textbf{Decision Tree:} Atributo nativo \texttt{feature\_importances\_} (mensurado via Redução Média de Impureza - MDI).
+    \item \textbf{Random Forest:} Atributo nativo \texttt{feature\_importances\_} (mensurado via Redução Média de Impureza consolidada pelo comitê).
+    \item \textbf{Gaussian Naive Bayes:} Abordagem de filtro estatístico utilizando a Razão-$F$ da Análise de Variância (ANOVA) via função \texttt{f\_classif}.
+    \item \textbf{Support Vector Machine (SVM):} Método de pós-processamento agnóstico ao modelo, mensurado via Importância por Permutação (\texttt{permutation\_importance}).
+    \item \textbf{K-Nearest Neighbors (KNN):} Método de pós-processamento agnóstico, avaliado similarmente por Importância por Permutação (\texttt{permutation\_importance}).
+\end{enumerate}
+
+Em seguida, os modelos matemáticos associados a cada variação do problema da mochila foram implementados e declarados no Python através da biblioteca declarativa \textit{PuLP}. Esta biblioteca atua como uma interface de modelagem, encaminhando o sistema de equações algébricas para o solver \textit{COIN-OR Branch and Cut} (CBC), o qual opera internamente com estratégias de Programação Linear Inteira (PLI) e Programação Linear Inteira Mista (PLIM) para certificar a convergência à solução ótima global.
+
+\subsubsection{Problema de Seleção do Melhor Subconjunto}
+
+O primeiro método fundamenta-se na formulação clássica de seleção de atributos sujeita a uma restrição de igualdade estrita para a cardinalidade. Para um metamodelo específico $m$, o problema de otimização em programação linear inteira mista é delineado como:
+
+\begin{equation} \label{eq:obj_subset}
+\text{Maximizar } \quad Z_1 = \sum_{i=1}^{N} S_{m,i} \cdot x_i
+\end{equation}
+
+Sujeito a:
+\begin{equation} \label{eq:rest_subset}
+\sum_{i=1}^{N} x_i = K
+\end{equation}
+
+\begin{equation}
+x_i \in \{0, 1\}, \quad \forall i \in \{1, \dots, N\}
+\end{equation}
+
+\noindent \textbf{Onde:}
+\begin{itemize}
+    \itemsep0em
+    \item $N$: Número total de meta-features candidatas no conjunto global;
+    \item $S_{m,i}$: Coeficiente ponderado de importância da meta-feature $i$ para o metamodelo referenciado $m$;
+    \item $K$: Limite máximo e alvo exato de cardinalidade para compor o subconjunto (\texttt{max\_feature});
+    \item $x_i$: Variável binária de decisão ($1$ se a meta-feature $i$ compuser a seleção final, e $0$ caso contrário).
+\end{itemize}
+
+
+\subsubsection{Problema da Mochila com Penalidades}
+
+O segundo modelo introduz maior flexibilidade quanto ao volume do subconjunto retornado, substituindo a exigência de igualdade por uma desigualdade (teto de capacidade). Em contrapartida, aplica-se um fator de penalização escalar $\lambda$ sobre a função objetivo, cujo papel é atuar como um limiar mínimo de utilidade marginal esperada para o incremento da acurácia global do sistema:
+
+\begin{equation} \label{eq:obj_knapsack}
+\text{Maximizar } \quad Z_2 = \sum_{i=1}^{N} (S_{m,i} - \lambda) \cdot x_i
+\end{equation}
+
+Sujeito a:
+\begin{equation} \label{eq:rest_knapsack}
+\sum_{i=1}^{N} x_i \le K
+\end{equation}
+
+\begin{equation}
+x_i \in \{0, 1\}, \quad \forall i \in \{1, \dots, N\}
+\end{equation}
+
+\noindent \textbf{Onde:}
+\begin{itemize}
+    \itemsep0em
+    \item $\lambda$: Hiperparâmetro atuante como taxa punitiva para cada característica de baixa contribuição individual adicionada (\texttt{l});
+    \item $K$: Carga limitante para a cardinalidade (neste escopo, tratada como um teto flexível admissível);
+    \item Os termos $N$, $S_{m,i}$ e $x_i$ persistem definidos conforme o modelo algébrico anterior.
+\end{itemize}
+
+
+\subsubsection{Problema da Mochila Quadrática Linearizada}
+
+Com o escopo de coibir os entraves da multicolinearidade informacional no espaço meta, o terceiro método impõe uma punição severa caso ocorra a seleção simultânea de pares de características detentoras de alta correlação. O modelo penalizado de base quadrática é reduzido para um formato puramente linear por meio da adição de variáveis contínuas auxiliares $z_{i,j}$ e das correspondentes inequações de McCormick para um conjunto fixo de alta correlação $\Omega$. A formulação integralizada para um metamodelo $m$ segue ditada por:
+
+\begin{equation} \label{eq:obj_quad}
+\text{Maximizar } \quad Z_3 = \sum_{i=1}^{N} S_{m,i} \cdot x_i - \gamma \sum_{(i,j) \in \Omega} C_{i,j} \cdot z_{i,j}
+\end{equation}
+
+Sujeito a:
+\begin{equation} \label{eq:rest_quad}
+\sum_{i=1}^{N} x_i \le K
+\end{equation}
+
+\begin{equation} \label{eq:mccormick1}
+z_{i,j} \le x_i, \quad \forall (i,j) \in \Omega
+\end{equation}
+
+\begin{equation} \label{eq:mccormick2}
+z_{i,j} \le x_j, \quad \forall (i,j) \in \Omega
+\end{equation}
+
+\begin{equation} \label{eq:mccormick3}
+z_{i,j} \ge x_i + x_j - 1, \quad \forall (i,j) \in \Omega
+\end{equation}
+
+\begin{equation}
+x_i \in \{0, 1\}, \quad \forall i \in \{1, \dots, N\}
+\end{equation}
+
+\begin{equation}
+z_{i,j} \in [0, 1], \quad \forall (i,j) \in \Omega
+\end{equation}
+
+\noindent \textbf{Onde:}
+\begin{itemize}
+    \itemsep0em
+    \item $\gamma$: Peso hiperparamétrico regulando a influência da penalidade de redundância face à soma das importâncias diretas (\texttt{gama});
+    \item $C_{i,j}$: Coeficiente de correlação absoluta computado de forma bivariada entre as meta-features $i$ e $j$;
+    \item $\theta$: Limiar constante de criticidade para a correlação (\texttt{corr\_threshold});
+    \item $\Omega = \{(i,j) \mid i < j \text{ e } C_{i,j} \ge \theta\}$: Conjunto discreto de combinações binárias cujas correlações sobrepujam o limiar estipulado $\theta$;
+    \item $z_{i,j}$: Variável auxiliar contínua sob relaxação linear ($1$ caso $x_i$ e $x_j$ compareçam simultaneamente).
+\end{itemize}
+
+As interações das restrições detalhadas nas Equações (\ref{eq:mccormick1}), (\ref{eq:mccormick2}) e (\ref{eq:mccormick3}) provêem uma linearização sem perdas para a interação quadrática $x_i \cdot x_j$, garantindo ao solver que a penalização da redundância $C_{i,j}$ seja computada estritamente quando ambas as propriedades passarem no crivo da seleção para o metamodelo.
+
+\subsection{Métodos Aproximados}
+
+No escopo dos métodos aproximados baseados em heurísticas evolutivas, cada indivíduo pertencente à população de um Algoritmo Genético (AG) engloba uma possível solução para a seleção. Esta solução é transcrita vetorialmente de forma binária, onde o mapeamento atrela posições do vetor às meta-features correspondentes. Quando o genótipo da posição assume valor 1, a característica correspondente encontra-se ativa no subconjunto; na ocorrência do valor 0, é inativada. Deste modo, um indivíduo isolado exprime um subconjunto dimensional distinto gerado no espaço de busca.
+
+Para chancelar a qualidade de um indivíduo operante, treina-se e valida-se um metamodelo sob posse restrita das características ativas neste cromossomo. A função de aptidão (\textit{fitness}) formulada engloba não apenas a avaliação direta pelo critério de acurácia média reportada em validação cruzada, mas instaura também uma penalização heurística robusta para refrear soluções superajustadas (excessivos atributos) e predições sofrendo alta variância inter-\textit{folds}. A equação orientadora foi descrita nos seguintes termos algébricos:
+
+\[
+fitness(x) = \overline{Acc}(x) - \lambda \left(\frac{|S_x|}{p}\right)^{\alpha} - \beta \sigma_{Acc}(x)
+\]
+
+sendo \(\overline{Acc}(x)\) a métrica da acurácia média alcançada, \(|S_x|\) o cômputo volumétrico das meta-features selecionadas na ativação, \(p\) a dimensão total de características filtradas e abertas à triagem, enquanto \(\sigma_{Acc}(x)\) representa o componente de instabilidade revelado através do desvio-padrão nas dobras (\textit{folds}). Adicionalmente, \(\lambda\), \(\alpha\) e \(\beta\) regem como parâmetros controladores para escalar e impor as sanções.
+
+Anteriormente ao gatilho do motor evolutivo nos algoritmos genéticos, impôs-se um estágio estrito destinado à purificação de metadados. Neste passo, realizou-se uma remoção profilática excluindo meta-features com saturação de dados ausentes (\textit{NaNs}), variáveis fixadas com variância nula, assim como a limpeza de colunas em redundância idêntica ou gravemente colineares. Por conseguinte, aplicou-se um filtro apoiado na teoria informacional (\textit{Mutual Information}), procedendo o corte das características para salvaguardar exclusivamente o \textit{ranking} contendo os 150 domínios superiores em relevância com os rótulos de recomendação. Semelhante saneamento viabiliza comprimir vertiginosamente o limiar da dimensão combinatória, concentrando o processamento dos AGs em um volume adensado unicamente pela relevância preditiva.
+
+Com a arquitetura fundamentada, estruturou-se testes sob a configuração de três moldes de Algoritmos Genéticos. O primeiro assumiu os papéis de AG Clássico puramente Binário, operando na função de linha de base. No dito contexto, a gênese dos indivíduos é de fomento meramente estocástico (aleatório), procedendo as recombinações biológicas sob cruzamento de um ponto (\textit{one-point crossover}) e induzindo variabilidades via mutação clássica \textit{bit-flip}. Trata-se de uma prospecção empírica sem qualquer absorção de prioridades extrínsecas sobre o valor das características, funcionando com intuito de observar a trajetória adaptativa de um AG mais simplório.
+
+O segundo molde consolidou o AG Guiado por \textit{Mutual Information} somado a uma mecânica de busca local. Em disparidade ao primeiro método, o conhecimento \textit{a priori} contido na relevância provida pelo ganho de informação influencia diretamente a semente na qual se forja uma vasta porção da população inicial. Com isso, arranjos genéticos superiores adentram a simulação garantindo largadas de alto patamar. Envolvendo a reprodução, adota-se os princípios do cruzamento uniforme, implementa-se mutação enviesada primariamente propícia a desligar genes (\textit{feature reduction}) em conformidade com o reparo pós-mutacional aplicando táticas de Busca Local, procurando extrair ótimos perante vizinhanças imediatas. Trata-se da unificação da navegação evolucionária casada às pistas e aos atalhos de propriedades sabidamente informativas.
+
+O terceiro derivado modelou o AG de perfil estritamente Esparso (Compacto), devotado à perseguição de fenótipos subdimensionados. Apesar de deter a mesma injeção guiada em sua população inicial como o segundo modelo, distingue-se por uma agressiva moderação restritiva regulando a taxa imposta ao montante de genes ativos. Recorrendo a mecanismos de probabilidade mutacional inversamente adensados em acionamento e travando uma cláusula intransponível ditando o teto global do subconjunto ativo, este modelo serviu ao rigor analítico para conferir, com exatidão, quão próximo poder-se-ia deter os percentuais máximos de assertividade mantendo, contudo, um vetor sumariamente ínfimo sob carga de trabalho computacional aliviada.
+
+De modo abrangente, o contraste avaliativo das três perspectivas possibilita demarcar reações claras: a experimentação estocástica contra a precisão guiada por atalhos evolutivos balanceadores versus a penalização ferrenha demandada pelos modelos puramente compactos.
+
+\subsection{Abordagem Híbrida}
+
+A proposta desta abordagem consiste em utilizar os métodos exatos como um pré-processamento robusto para a seleção inicial de meta-features. As soluções rigorosas obtidas por essas modelagens matemáticas são, em seguida, injetadas como indivíduos de elite na população de largada do Algoritmo Genético (\textit{Seeded GA}). Esta fusão estratégica permite combinar a precisão matemática da Programação Linear Inteira com a extrema capacidade de exploração do espaço de busca conferida pela meta-heurística.
+
+\section{Metodologia Experimental}
+
+\subsection{Métodos Exatos}
+
+A metodologia de condução experimental para os métodos exatos tem início com a extração das pontuações de importância (pesos) de cada meta-feature, valendo-se dos classificadores base estipulados: \textit{Decision Tree}, \textit{Random Forest}, SVM, KNN e \textit{Naive Bayes}. Ressalta-se que o pré-processamento de padronização escalar (\textit{StandardScaler}) é aplicado exclusivamente às partições de dados que alimentam os algoritmos sensíveis à escala (SVM, \textit{Naive Bayes} e KNN). Todos os modelos de seleção exata detalhados na Seção \ref{sub:exato} são treinados e validados rigorosamente através da técnica de validação cruzada \textit{Leave-One-Out}. 
+
+Este processo de otimização gera, como saída, um conjunto exclusivo de meta-features selecionadas para cada modelo. Ato contínuo, orquestra-se uma validação cruzada abrangente que testa os cinco classificadores preditivos de nível meta cruzando-os com os cinco conjuntos de meta-features selecionados pela PLI. Esta dinâmica totaliza 25 cenários experimentais distintos. O propósito fulcral desta etapa metodológica reside em determinar qual combinação pareada (metamodelo e meta-features) maximiza a acurácia preditiva de forma global.
+
+\subsection{Métodos Aproximados}
+
+Visando otimizar não apenas o tempo de execução, mas a própria estabilidade da busca exploratória, delineou-se estratégias modulares para a parametrização dos Algoritmos Genéticos (AG). Conforme fundamentado, procedeu-se inicialmente à filtragem rigorosa no \textit{meta-dataset} visando elidir atributos nulos, constantes e colineares, culminando na retenção das 150 meta-features mais promissoras através do filtro supervisionado de \textit{Mutual Information}.
+
+Para o cômputo processual da função de aptidão (\textit{fitness}), elegeu-se o classificador em comitê \textit{ExtraTreesClassifier}, alavancado por sua latência irrisória em treinamento e excepcional robustez intrínseca a variâncias de amostras. A avaliação deste classificador interno em cada geração operou sob o regimento de validação cruzada estratificada (\textit{StratifiedKFold}), ajustada para 5 agrupamentos ($K = 5$), atenuando consideravelmente os riscos associados ao \textit{overfitting}.
+
+A evolução contínua das populações fundou-se sobre um ecossistema de 80 cromossomos (indivíduos), encadeados por 150 gerações ininterruptas. A mecânica de sobrevivência (seleção) utilizou o clássico torneio de tamanho 4 emparelhado a um elitismo brando responsável por preservar imutáveis os 4 campeões de cada ciclo. Os operadores reprodutivos obedeceram a uma taxa fixa de cruzamento de 85\% combinada a uma taxa de mutação projetada para ser adaptativa: deflagrando com alta variabilidade probabilística (10\%) nas gerações germinais e sofrendo decaimento linear gradativo até aterrissar em uma convergência conservadora de 2\% ao findar o processo evolutivo.
+
+A metodologia abraça a simulação exaustiva de três arquiteturas distintas no campo aproximativo: (1) \textbf{AG Clássico Binário}, votado à exploração estocástica pura; (2) \textbf{AG Guiado com Busca Local}, voltado a um refinamento perante ótimos vizinhos com foco em estabilidade; e (3) \textbf{AG Esparso}, restrito ao propósito de resgatar subconjuntos mínimos de \textit{features}. Consecutivamente, ao término desta etapa experimental, são obtidos três metamodelos consolidados, onde cada um materializa a melhor solução otimizada concebida por sua respectiva variação algorítmica.
+
+\subsection{Abordagem Híbrida}
+
+A etapa de culminância metodológica foca em arquitetar a ponte sistêmica da Abordagem Híbrida, buscando convergir o trunfo resolutivo estrito dos métodos enraizados em modelos exatos paralelamente à capacidade de exploração topográfica dos algoritmos evolutivos. Destinando-se a isso, introduz-se como engrenagem central a mecânica estipulada via paradigma de Algoritmo Genético Semeado (\textit{Seeded GA}). Diferentemente de outras rotas semânticas que abordam o problema de recomendação puramente por meio de ontologias e ontometrias focadas na qualidade basal dos dados \cite{nayak2022ontological}, a Abordagem Híbrida proposta nesta pesquisa fundamenta-se estritamente no rigor matemático da Pesquisa Operacional para fertilizar a exploração meta-heurística.
+
+Refletindo seu processo de injeção elitista, em gritante contraste com a semeadura populacional dos métodos genéticos puros (que ocorrem de forma randômica ou apoiadas em filtros univariados), a matriz primeva da abordagem híbrida é deliberadamente nutrida pelos achados finais computados na conclusão da fase exata. Detalhando cirurgicamente: os arranjos topológicos que perfazem os subconjuntos mínimos de meta-features, já chancelados matematicamente pelas modelagens de Programação Linear Inteira, são inoculados de forma explícita dentro do \textit{framework} evolutivo, preenchendo as cotas como instâncias supremas de elite na população inicial do algoritmo genético.
+
+Como salvaguarda essencial para assegurar a estrita consistência e justiça na comparabilidade de performance experimental, o \textit{Seeded GA} herda integral e obrigatoriamente a mesma grelha de hiperparâmetros evolutivos previamente estipulada para os métodos aproximados (mesma litragem populacional, dinâmica de decaimento de mutação, aspersão de cruzamento e dependência do classificador \textit{ExtraTreesClassifier}), inclusive atravessando a exata \textit{pipeline} de purificação dos metadados. Alicerçada nesses trâmites isonômicos, a meta-heurística decola o seu cruzeiro evolutivo diretamente das regiões do espaço de busca comprovadamente otimizadas pelos métodos exatos. O propósito indubitável é refinar as soluções, escapar de eventuais estagnações em ótimos locais e encontrar a combinação definitiva de \textit{meta-features} para a recomendação soberana de algoritmos.
+
+\section{Resultados e Discussão}
+
+\subsection{Métodos Exatos}
+
+Ao analisar os resultados dos métodos exatos tem-se que o melhor classificador desempenhado foi a DecisionTree. Entretanto, o SVM conseguiu ter uma menor variância em relação aos outros algoritmos, como mostra a Figura~\ref{fig:boxplots_exatos}.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=.32\textwidth]{boxplot_method_Best_Subset_Selection_by_Filter_MILP.png}
+\hfill
+\includegraphics[width=.32\textwidth]{boxplot_method_Knapsack_Problem_ILP.png}
+\hfill
+\includegraphics[width=.32\textwidth]{boxplot_method_Correlation_Penalized_milp.png}
+\caption{Desempenho dos algoritmos utilizando as modelagens de métodos exatos para seleção de meta-features.}
+\label{fig:boxplots_exatos}
+\end{figure}
+
+Como está sendo tratado um problema de categorização, é normal que algoritmos de natureza categórica, como DecisionTree e RandomForest, tenham um desempenho melhor que os outros, pois eles conseguem delimitar melhor o espaço de busca e as características que separam os datasets.
+
+\begin{table}[H]
+\centering
+\caption{Acurácia média obtida no nível meta a partir da seleção por métodos exatos.}
+\label{tab:metodos_exatos}
+\begin{tabular}{llcc}
+\hline
+\textbf{Método} & \textbf{Melhor Algoritmo} & \textbf{Acurácia Média} & \textbf{Meta-features} \\
+\hline
+Melhor Subset & Decision Tree & 0.6276 & 200 \\
+Knapsack com Penalidade & Decision Tree & 0.6808 & 23 \\
+Knapsack Quadratica & Decision Tree & 0.6702 & 17 \\
+\hline
+\end{tabular}
+\end{table}
+
+Com isso, observando a Tabela~\ref{tab:metodos_exatos}, nota-se que em nível meta o algoritmo DecisionTree foi o responsável por obter o melhor desempenho (acurácia de 62,76\%). Além disso, a filtragem inicial reduziu drasticamente o espaço de mais de 1000 atributos para um conjunto refinado de 66 características. Isso impacta positivamente de forma direta tanto o custo de treinamento quanto a velocidade do modelo final na predição. Esses achados corroboram estudos empíricos anteriores na literatura \cite{pereira2021evaluating}, que também demonstraram que abordagens de seleção de meta-features e redução de dimensionalidade conseguem descartar grande parte das características originais mantendo a performance e acelerando consideravelmente o tempo de execução.
+
+\subsection{Métodos Aproximados}
+
+A Tabela~\ref{tab} apresenta os resultados obtidos com as três variações de Algoritmo Genético testadas neste trabalho. Esses resultados estão relacionados ao desempenho no nível meta, ou seja, à capacidade do meta-modelo de indicar qual algoritmo de aprendizado de máquina tende a apresentar melhor desempenho para uma determinada base de dados, utilizando apenas as meta-features selecionadas por cada abordagem.
+
+\begin{table}[H]
+\centering
+\caption{Comparação dos algoritmos genéticos para seleção de meta-features.}
+\label{tab}
+\begin{tabular}{lcccc}
+\hline
+\textbf{Método} & \textbf{Acurácia média} & \textbf{Desvio} & \textbf{Fitness} & \textbf{Meta-features} \\
+\hline
+AG 1 -- Clássico binário & 0,6339 & 0,0542 & 0,6150 & 66 \\
+AG 2 -- Guiado por MI + busca local & 0,6866 & 0,0700 & 0,6684 & 31 \\
+AG 3 -- Compacto/esparso & 0,6661 & 0,0723 & 0,6507 & 18 \\
+\hline
+\end{tabular}
+\end{table}
+
+Observando os resultados, percebe-se que o AG 1 foi o método que selecionou a maior quantidade de meta-features, com 66 atributos escolhidos entre os 150 disponíveis após a etapa de filtragem. Isso representa cerca de 44\% do conjunto final de atributos. Apesar de ter apresentado o menor desvio-padrão entre os três métodos, ele obteve a menor acurácia média. Esse resultado mostra que selecionar mais atributos não significa, necessariamente, melhorar o desempenho do meta-modelo. Nesse caso, o AG clássico acabou mantendo um subconjunto maior, mas sem conseguir superar as outras abordagens.
+
+O AG 2 foi o método com melhor desempenho geral. Ele alcançou acurácia média de 0,6866, utilizando 31 meta-features. Esse resultado indica que o uso da Mutual Information para orientar a inicialização da população, junto com a etapa de busca local, ajudou o algoritmo a encontrar subconjuntos mais relevantes. Além disso, o método conseguiu reduzir bastante a quantidade de atributos em relação ao AG 1, mantendo o melhor valor de fitness entre as três abordagens.
+
+Já o AG 3 selecionou o menor subconjunto de meta-features, com apenas 18 atributos. Mesmo utilizando uma quantidade bem menor de características, ele obteve acurácia média de 0,6661, ficando abaixo do AG 2, mas ainda acima do AG 1. Esse resultado é interessante porque mostra que uma solução mais compacta ainda pode manter um desempenho competitivo. Dessa forma, o AG 3 se destaca quando o objetivo é reduzir ao máximo a quantidade de atributos, mesmo que isso gere uma pequena perda de acurácia em comparação com o melhor resultado.
+
+As Figuras~\ref{fig} e~\ref{fig} apresentam, respectivamente, a evolução da acurácia média e da quantidade de meta-features selecionadas ao longo das gerações. Esses gráficos ajudam a visualizar como cada algoritmo evoluiu durante a busca e como ocorreu o equilíbrio entre desempenho e redução do número de atributos.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=.85\textwidth]{evolution_ag_accuracy.png}
+\caption{Evolução da melhor acurácia média acumulada dos algoritmos genéticos.}
+\label{fig}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=.85\textwidth]{evolution_ag_n_features.png}
+\caption{Evolução da quantidade de meta-features selecionadas pelos algoritmos genéticos.}
+\label{fig}
+\end{figure}
+
+De modo geral, os resultados mostram que o AG 2 foi a melhor opção quando o foco principal é obter maior acurácia no meta-modelo. Por outro lado, o AG 3 foi o mais eficiente em termos de redução dimensional, pois selecionou o menor conjunto de meta-features e ainda manteve um desempenho próximo ao melhor resultado. O AG 1 serviu como uma boa base de comparação, mas foi menos eficiente, já que selecionou mais atributos e apresentou menor acurácia.
+
+\subsection{Abordagem Híbrida}
+
+Com um pré-processamento reduzindo bastante as meta-features iniciais e direcionando uma população elitista com as melhores combinações matemáticas, a abordagem híbrida elevou significativamente o desempenho em relação aos outros métodos puramente aproximados. Entretanto, o número de gerações necessárias para a convergência e a estabilização do algoritmo oscilaram consideravelmente, como ilustra a Figura~\ref{fig:hybrid_n_features}. Isso impacta de forma direta o tempo de processamento necessário para selecionar e refinar os atributos na criação do meta-modelo.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=.85\textwidth]{evolution_ag_hybrid_n_features.png}
+\caption{Evolução da quantidade de meta-features selecionadas durante a abordagem híbrida.}
+\label{fig:hybrid_n_features}
+\end{figure}
+
+Porém, a abordagem híbrida se destacou substancialmente na acurácia geral. Os meta-modelos obtiveram um salto de desempenho contínuo ao longo das gerações, indicando o sucesso do escape de ótimos locais, como demonstrado na Figura~\ref{fig:hybrid_accuracy}. Esse avanço traduz-se em uma maior precisão recomendatória, repercutindo beneficamente não apenas no nível meta, mas, por consequência, na escolha assertiva do algoritmo de nível base.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=.85\textwidth]{evolution_ag_hybrid_accuracy.png}
+\caption{Evolução da melhor acurácia média acumulada na abordagem híbrida.}
+\label{fig:hybrid_accuracy}
+\end{figure}
+
+Por fim, a Tabela~\ref{tab:hybrid} descreve a comparação quantitativa exata das três formulações testadas para a abordagem híbrida, destacando a acurácia média e a quantidade de meta-features finais do melhor indivíduo.
+
+\begin{table}[H]
+\centering
+\caption{Comparação final das variações da abordagem híbrida.}
+\label{tab:hybrid}
+\begin{tabular}{lcccc}
+\hline
+\textbf{Método} & \textbf{Acurácia média} & \textbf{Desvio} & \textbf{Fitness} & \textbf{Meta-features} \\
+\hline
+Híbrido AG 1 - Clássico binário & 0,6660 & 0,1037 & 0,6433 & 71 \\
+Híbrido AG 2 - Guiado (MI) & 0,6649 & 0,1084 & 0,6433 & 30 \\
+Híbrido AG 3 - Compacto/esparso & 0,7105 & 0,0954 & 0,6924 & 18 \\
+\hline
+\end{tabular}
+\end{table}
+
+Destaca-se que o Híbrido AG 3 (Compacto/Esparso) conseguiu uma acurácia superior (71,05\%) exigindo impressionantes 18 meta-features, configurando a melhor relação de custo e precisão preditiva de toda a experimentação. No entanto, o principal ponto negativo da abordagem híbrida continua sendo sua complexidade de execução sequencial e o extenso custo computacional. Em contextos ou cenários industriais nos quais se exige um re-treinamento rápido e dinâmico, talvez não seja a alternativa mais pragmática.
+
+\subsection{Discussão Geral}
+
+Os resultados sintetizados evidenciam que, ao comparar globalmente a performance isolada dos algoritmos no nível base (Figura~\ref{fig:acc_base}) com a performance alavancada pelo nível meta (Figura~\ref{fig:acc_meta}), a escolha informada do \textit{pipeline} de \textit{machine learning} se mostra amplamente superior a abordagens estáticas ou de seleção ingênua. Observamos que os desempenhos individuais dos classificadores no nível base oscilam significativamente em resposta à complexidade e à natureza topológica intrínseca de cada \textit{dataset}, reforçando a máxima do teorema \textit{No Free Lunch}: não existe um "algoritmo universal" que triunfe de forma absoluta em todos os cenários.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=.85\textwidth]{acc_base.png}
+\caption{Acurácia média isolada dos classificadores no nível base para os datasets.}
+\label{fig:acc_base}
+\end{figure}
+
+Quando a seleção de algoritmos passa a ser governada pelo meta-aprendizado de características (direcionada pelos metamodelos), a performance preditiva global do sistema adquire estabilidade. Nessa dinâmica sistêmica, os piores cenários — instâncias onde modelos falhariam miseravelmente devido a incapacidades em suas próprias arquiteturas algorítmicas — são mitigados com êxito pela recomendação ativa de modelos complementares, intrinsecamente mais propensos a capturar o padrão adjacente latente naqueles dados específicos.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=.85\textwidth]{acc_meta.png}
+\caption{Melhoria da acurácia e estabilização de resultados conduzida pelo sistema de nível meta.}
+\label{fig:acc_meta}
+\end{figure}
+
+\section{Conclusão}
+
+A resolução do problema de recomendação de algoritmos no contexto de meta-aprendizado transcende a mera predição do modelo de maior acurácia; trata-se, fundamentalmente, de decifrar quais parcelas da informação topológica contêm real poder preditivo e quais atuam puramente como "ruído". Conforme demonstrado ao longo do estudo, as ferramentas modernas de extração (como o pacote \textit{pymfe}) geram com facilidade milhares de meta-features. Contudo, propagar integralmente essa dimensionalidade massiva pelo \textit{pipeline} de \textit{Machine Learning} acarreta penalidades severas de lentidão computacional, propensão ao sobreajuste (\textit{overfitting}) e acentuada instabilidade analítica para os metamodelos, um déficit empiricamente atestado na experimentação não filtrada.
+
+Ao investigar diferentes arquiteturas seletivas — transitando pela exatidão das formulações matemáticas, explorando as heurísticas aproximadas com Algoritmos Genéticos (AG) e aliando as potencialidades de ambos em uma robusta abordagem híbrida —, foram revelados \textit{trade-offs} críticos situados na intersecção entre Engenharia de Software e Pesquisa Operacional.
+
+Os \textbf{métodos exatos} comprovaram que modelagens lineares (a exemplo das formulações do Problema da Mochila com Penalidade e da Mochila Quadrática com Variáveis de McCormick) garantem podas rigorosas no espaço dimensional. Ao confinar o metamodelo a utilizar apenas os atributos mais determinantes, o tempo de inferência decaiu vertiginosamente e a redundância foi mitigada com certificação matemática global.
+
+Os \textbf{métodos aproximados (Algoritmos Genéticos)} ratificaram que a exploração exaustiva não é um pré-requisito irrevogável. Especificamente, a arquitetura que condicionou a inicialização estocástica a uma triagem prévia balizada pela Teoria da Informação (\textit{Mutual Information}) entregou um equilíbrio notório. O AG obteve sucesso em garimpar e recombinar atributos de forma não linear, elevando a estamina do metamodelo e despontando desempenhos sistematicamente superiores ao método estocástico cego.
+
+Todavia, foi na materialização da \textbf{Abordagem Híbrida (\textit{Seeded GA})} que a pesquisa atingiu sua apoteose tecnológica. Injetar subconjuntos ótimos como "elites" prematuras na evolução heurística guiou o AG rumo a fendas inexploradas do espaço de busca. Este método obteve a descoberta fascinante de que o uso exclusivo de \textbf{18 meta-features} foi capaz de gerar expressivos 71,05\% de acurácia de indicação no nível meta. Embora as instabilidades intrínsecas ao \textit{dataset} impeçam a garantia estrita desse limiar absoluto a cada re-treino individual, este achado fundamenta uma tese expressiva: menos de 2\% do escopo de características brutas é factível para antecipar, com notória robustez, o comportamento de múltiplos preditores na base, desde que a seleção metodológica seja cirúrgica.
+
+A contrapartida desta excelência analítica, inegavelmente, reside no pesado fardo processual intrínseco à hibridização serial. Treinar exaustivamente avaliações cruzadas, penalizar formalmente via \textit{solver} PLI e, somente \textit{a posteriori}, evoluir estocasticamente populações inteiras, ergue-se como um obstáculo muitas vezes inviável para infraestruturas pautadas por resposta em tempo real ou sob demandas voláteis. Como alternativa ao gargalo provocado pelo retreinamento constante, estudos recentes propõem abstrações inovadoras que transformam o espaço de busca discreto em contínuo utilizando meta-aprendizado \cite{metafs2023}, o que fortalece a justificativa do limite técnico enfrentado no presente estudo empírico. O verdadeiro valor deste estudo encontra-se justamente neste discernimento metodológico: para \textit{pipelines} que necessitam de induções ligeiras e baixo atrito, recomendam-se métodos de filtragem diretos ou as matrizes de AG esparso. Contudo, para corporações e sistemas acadêmicos massivos de AutoML focados em estabilidade crônica, o rigoroso e oneroso investimento computacional despendido na fase híbrida invariavelmente sedimentará os caminhos mais curtos, enxutos e infalíveis rumo às inferências supremas na base.
+
+\bibliographystyle{sbc}
+\bibliography{sbc-template}
+
+\end{document}
+
