@@ -99,7 +99,7 @@ Seleção de meta-features e seu efeito na performance de sistemas de meta-apren
         \begin{enumerate}
             \item Introdução e Motivação
             \item O Problema
-            \item Proposta (Exatos, Aproximados, Híbrido)
+            \item Proposta (Métodos Exatos, Aproximados e Híbrida)
             \item Metodologia Experimental
             \item Resultados
             \item Conclusão
@@ -111,7 +111,7 @@ Seleção de meta-features e seu efeito na performance de sistemas de meta-apren
 
 \begin{frame}{Introdução e Motivação}
 \begin{block}{Contexto AutoML}
-A importância de selecionar os atributos corretos para a construção de metamodelos é fundamental para otimizar recomendações de algoritmos \cite{vanschoren2018meta, he2021automl, wang2023onestep}.
+Selecionar os atributos corretos para a construção de metamodelos é fundamental para otimizar recomendações de algoritmos \cite{vanschoren2018meta, he2021automl, wang2023onestep}.
 \end{block}
 
 \vspace{0.3cm}
@@ -145,9 +145,9 @@ O problema central consiste na busca de um subconjunto de características que m
 Identificar um subconjunto de meta-features capaz de elevar a acurácia do meta-modelo sob a estratégia de recomendação do melhor algoritmo (\textit{Best Algorithm}).\end{block}
 
 \begin{itemize}
-    \item \textbf{Caracteristicas do meta-dataset:} Utilizar o meta-dataset com meta-features de 94 datasets do \textit{openml} (Exemplo 4), tendo 1153 meta-features extraídas.
-    \item \textbf{Maximizar acuracia:} Encontrar um subconjunto que maximiza a acuracia do meta-modelo.
-    \item \textbf{Meta-features com pré processamento vs sem pré processamento:} Metodo exato não utiliza pré processamento para melhorar o desempenho, porém os métodos aproximados e abordagem hibrida utilizam pré processamento para melhorar o desempenho.
+    \item \textbf{Características do meta-dataset:} Utilizar o meta-dataset com meta-features de 94 datasets do \textit{OpenML} (Exemplo 4), totalizando 1153 meta-features extraídas.
+    \item \textbf{Maximizar a acurácia:} Encontrar um subconjunto que maximize a acurácia preditiva do meta-modelo.
+    \item \textbf{Impacto do pré-processamento:} O método exato não o utiliza; no entanto, os métodos aproximados e a abordagem híbrida aplicam o pré-processamento para aprimorar o desempenho.
 \end{itemize}
 \end{frame}
 
@@ -199,7 +199,7 @@ A Abordagem Híbrida utiliza os resultados provenientes dos Modelos Exatos (Prog
 \begin{block}{Pré-Processamento e Purificação}
 \begin{itemize}
     \item \textbf{Limpeza:} Redução drástica nas meta-features brutas por filtros estáticos (baixa variância, colinearidade, NaNs).
-    \item \textbf{Filtro:} Utilização de \textit{Mutual Information} culminando num grupo refinado de 150 top características.
+    \item \textbf{Filtro:} Utilização do filtro de \textit{Mutual Information} culminando num grupo refinado das 150 características mais relevantes.
 \end{itemize}
 \end{block}
 
@@ -241,7 +241,7 @@ Knapsack Quadrática & Decision Tree & 0.6702 & 17 \\
 \end{table}
 
 \begin{itemize}
-    \item A drástica redução de atributos mantendo a performance corrobora estudos empíricos anteriores \cite{pereira2021evaluating}.
+    \item A drástica redução de atributos, mantendo a performance, corrobora estudos empíricos anteriores \cite{pereira2021evaluating}.
 \end{itemize}
 
 \begin{figure}[H]
@@ -292,7 +292,7 @@ Híbrido AG 3 - Esparso & 0,7105 & 0,0954 & 18 \\
 \end{table}
 
 \begin{itemize}
-    \item A Abordagem Híbrida (AG Esparso) bateu a incrível acurácia de \textbf{71,05\%} necessitando de apenas \textbf{18 atributos}.
+    \item A Abordagem Híbrida (AG Esparso) atingiu a expressiva acurácia de \textbf{71,05\%} necessitando de apenas \textbf{18 atributos}.
 \end{itemize}
 
 \begin{figure}[H]
@@ -336,19 +336,17 @@ O emprego de Metamodelos para recomendação ativa alavanca e estabiliza os acer
 
 \vspace{0.3cm}
 \begin{itemize}
-    \item \textbf{Particularidade das meta-features:} As meta-features são descritivo, estatiticos e etc, por isso, os modelos baseados em árvores desempenhou melhor que os outros.
+    \item \textbf{Particularidade das meta-features:} Por possuírem natureza descritiva, estatística, entre outras, os modelos baseados em árvores desempenharam melhor que os demais.
 \end{itemize}
 \begin{itemize}
-    \item \textbf{Trade-off:} Modelos híbridos obtiveram a apoteose avaliativa em troca do alto fardo e custo de processamento sequencial. Alternativamente ao gargalo, estudos propõem abstrações transformando o espaço em contínuo \cite{metafs2023}.
+    \item \textbf{Trade-off:} Modelos híbridos obtiveram o melhor desempenho avaliativo em troca do alto fardo e custo computacional sequencial. Alternativamente ao gargalo, estudos propõem abstrações transformando o espaço em contínuo \cite{metafs2023}.
 \end{itemize}
 \end{frame}
 
 \section{Trabalhos Futuros}
 
 \begin{frame}{Trabalhos Futuros}
-\begin{block}{Perspectivas de Extensão}
 Com base nos resultados e limitações deste estudo empírico, propõem-se as seguintes frentes para prosseguimento:
-\end{block}
 
 \vspace{0.3cm}
 \begin{itemize}
