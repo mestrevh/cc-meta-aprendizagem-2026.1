@@ -1,44 +1,26 @@
-# Descrição
+# Seleção de Meta-features e seu Efeito na Performance de Sistemas de Meta-aprendizagem
 
-Esse trabalho tem como objetivo a seleção de metafeatures visando a performance de sistemas de meta-aprendizado. A ideia é utilizar algoritmos de otimização para selecionar a melhor combinação de metafeture para a performance final.
+**Autores:** João Pedro Nunes Magalhães, Victor Hugo Silva Ângelo  
+**Instituição:** Instituto de Computação (IC) -- Universidade Federal de Alagoas (UFAL)
 
-Sugestões do professor:
+Este diretório armazena a pesquisa acadêmica e a documentação associada ao projeto focado na otimização de sistemas de meta-aprendizagem por meio da seleção rigorosa de meta-features. O projeto explora o impacto da alta dimensionalidade no treinamento de metamodelos e propõe soluções ancoradas na intersecção entre Aprendizado de Máquina (*Machine Learning*) e Pesquisa Operacional.
 
-- comparar o conjunto original de MFs com o conjunto final (reduzido);
-- curva de performance ao longo do tempo de otimização;
-- comparar conjunto reduzido com importância das features reportada por um modelo de Random Forest;
-- discutir as possíveis causas da escolha de algumas features.
+## Resumo do Artigo
 
-## Fase 1: Criação dos meta-datasets
+O artigo aborda os desafios práticos inerentes ao *Automated Machine Learning* (AutoML), com ênfase na mitigação da maldição da dimensionalidade e dos prejuízos causados pela redundância informacional e multicolinearidade provenientes da extração massiva de características de conjuntos de dados. Balizado pelo teorema *No Free Lunch*, o estudo foca em otimizar a recomendação de algoritmos preditivos. 
 
-1. Criação do metadataset (Exemplo 4)
-2. Análise e discussão sobre os dados
-3. Área de busca das metafeatures (atualmente tem mais de 1000 colunas)
----
+Para a seleção de meta-features, o trabalho avalia três arquiteturas metodológicas principais:
 
-## Fase 2: Classe de meta-modelos
+- **Métodos Exatos:** Otimização matemática via Programação Linear Inteira (PLI) através do *solver* CBC. Compreende o Problema de Seleção do Melhor Subconjunto, o Problema da Mochila com Penalidade e o Problema da Mochila Quadrática Linearizada, visando a extração exata do subconjunto ótimo.
+- **Métodos Aproximados:** Modelagem meta-heurística ancorada em Algoritmos Genéticos (AG). Engloba a inicialização orientada pela Teoria da Informação (*Mutual Information*), mecanismos de busca local e restrições de cardinalidade (AG Esparso).
+- **Abordagem Híbrida (*Seeded GA*):** Convergência estrutural que injeta os arranjos validados pelos modelos matemáticos exatos como indivíduos de elite na população inicial evolutiva, congregando a garantia formal de otimalidade à ampla capacidade topográfica de exploração inerente ao algoritmo estocástico.
 
-1. Construção de uma classe para treinamento do meta-modelo com metodologia LeaveOneOut
-2. Ideia é utilizar mais de 1 classificador para meta-modelo
-3. Pré processamento nos meta-modelos
----
+Os resultados demonstram analítica e empiricamente a estabilização da curva preditiva ocasionada pela filtragem das características no nível meta. Destaca-se a Abordagem Híbrida, capaz de atingir expressivos 71,05% de assertividade na recomendação de algoritmos utilizando um limite restrito de 18 meta-features (o que corresponde a menos de 2% do repositório inicial extraído), ponderando adequadamente a eficácia preditiva contra o respectivo ônus computacional processual.
 
-## Fase 3: Exploração dos algoritmos de seleção
+## Estrutura do Diretório
 
-1. Testar com algoritmos exatos (exemplo: programação linear - cplex) e algoritmos meta-heuristicos (exemplo: algoritmo genético)
-2. 3 abordagens para ambos tipos de algoritmos
-3. Utilizar uma abordagem híbrida: diminuir o espaço de busca e verificar a importância para melhorar 
----
+O diretório encontra-se estruturado para facilitar o acesso aos recursos do artigo e do código operacional:
 
-## Fase 4: Resultados e discussão
-
-1. Criar tabela com os resultados dos meta-modelos
-2. Utilizar gráficos e falar sobre o impacto das meta-features
-3. Concluir recomendando a melhor peformance sobre as características
----
-
-### Referências
-
-1. Section 4 - Metalearning Applications to Automated Machine Learning and Data Mining
-2. Predicting relative performance of classifiers from samples.
-3. An iterative process for building learning curves and predicting relative performance of classifiers.
+- `docs/`: Documentação externa, literatura adicional e materiais de suporte.
+- `lattex/`: Arquivos-fonte do artigo acadêmico redigido em LaTeX. Inclui o documento principal (`lattex/main/article.tex`), o respectivo pacote bibliográfico no formato BibTeX (`lattex/main/sbc-template.bib`), além dos arquivos de figuras e gráficos incorporados aos resultados da pesquisa.
+- `src/`: Códigos-fonte e *scripts* de modelagem computacional desenvolvidos na linguagem Python. Abriga os módulos para a execução das abordagens exatas, aproximadas e híbridas, além de todo o *pipeline* de pré-processamento e validação cruzada do sistema de meta-aprendizagem.
